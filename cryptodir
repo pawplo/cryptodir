@@ -1,0 +1,136 @@
+#!/bin/bash
+#
+# The MIT License (MIT)
+#
+# Copyright (c) 2018 Pawel Plociennik (github.com/pawplo)
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+
+which cryptofile 1>/dev/null 2>/dev/null
+if [ $? -ne 0 ]; then
+	echo "cryptofile is not installed !!!"
+	echo "https://github.com/pawplo/cryptofile"
+	exit 1
+fi;
+
+if [ -z $1 ]; then
+	echo "usage: $0 {enc | dec} <key> <dir_in> <dir_out>"
+	exit 1
+fi;
+
+if [ -z $2 ]; then
+	echo "usage: $0 {enc | dec} <key> <dir_in> <dir_out>"
+	exit 1
+fi;
+
+if [ -z $3 ]; then
+	echo "usage: $0 {enc | dec} <key> <dir_in> <dir_out>"
+	exit 1
+fi;
+
+if [ -z $4 ]; then
+	echo "usage: $0 {enc | dec} <key> <dir_in> <dir_out>"
+	exit 1
+fi;
+
+if [ x_$1 != x_enc ] && [ x_$1 != x_dec ]; then
+	echo "usage: $0 {enc | dec} <key> <dir_in> <dir_out>"
+	exit 1
+fi;
+
+if [ ! -d $3 ]; then
+	echo "error: $3 is not directory !!!"
+	exit 1
+fi;
+
+if [ ! -d $4 ]; then
+	echo "error: $4 is not directory !!!"
+	exit 1
+fi;
+
+if [ x_$1 == x_enc ]; then
+	if [ ! -e $4/.cryptodir_enc ]; then
+		echo "$4/.cryptodir_enc does not exists !!!"
+		exit 1
+	fi;
+else
+	if [ ! -e $4/.cryptodir_dec ]; then
+		echo "$4/.cryptodir_dec does not exists !!!"
+		exit 1
+	fi;
+fi;
+
+for IN_FILE in `find $3 -type f`; do
+	if [ x_$1 == x_enc ]; then
+		if [ `basename $IN_FILE` == ".cryptodir_enc" ]; then
+			continue
+		fi;
+		if [ `basename $IN_FILE` == ".cryptodir_dec" ]; then
+			continue
+		fi;
+		OUT_FILE=$4${IN_FILE#$3}.enc
+	else
+		if [ `basename $IN_FILE` == ".cryptodir_enc" ]; then
+			continue
+		fi;
+		if [ `basename $IN_FILE` == ".cryptodir_dec" ]; then
+			continue
+		fi;
+		OUT_FILE=$4${IN_FILE#$3}
+		if [ ${OUT_FILE%.enc}.enc == $OUT_FILE ]; then
+			OUT_FILE=${OUT_FILE%.enc}
+		else
+			echo "$OUT_FILE is not .enc file type !!!"
+			exit 1
+		fi;
+	fi;
+#	echo "\"$IN_FILE\"	\"$OUT_FILE\""
+
+	if [ ! -e "$OUT_FILE" ]; then
+		if [ ! -d `dirname $OUT_FILE` ]; then
+			mkdir -p `dirname $OUT_FILE`
+			if [ $? -ne 0 ]; then
+				echo "mkdir "`dirname $OUT_FILE`" !!!"
+				exit 1
+			fi;
+		fi;
+		cryptofile $1 $2 "$IN_FILE" "$OUT_FILE"
+		if [ $? -ne 0 ]; then
+			echo "cryptofile error !!!"
+			exit 1
+		fi;
+		echo "[N] $OUT_FILE"
+	else
+		IN_FILE_DATE=`date -r $IN_FILE +%s`
+		OUT_FILE_DATE=`date -r $OUT_FILE +%s`
+
+		if [ $IN_FILE_DATE -ge $OUT_FILE_DATE ]; then
+			cryptofile $1 $2 "$IN_FILE" "$OUT_FILE"
+			if [ $? -ne 0 ]; then
+				echo "cryptofile error !!!"
+				exit 1
+			fi;
+			echo "[U] $OUT_FILE"
+		else
+			echo "[-] $OUT_FILE"
+		fi;
+	fi;
+
+done;
